@@ -1,38 +1,56 @@
-name: CMake Pack and Release
+name: CMake Pack and Multi-OS Release
 
-# 1. Триггер: запускать сборку только тогда, когда в репозиторий пушится новый тег версии (например, v0.1.0.0)
 on:
   push:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   build-and-pack:
-    runs-on: ubuntu-latest
+    # Использование матрицы для запуска сборки одновременно на Linux и macOS
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            generator: "DEB;RPM"  # Собираем .deb и .rpm пакеты на Linux
+          - os: macos-latest
+            generator: "DragNDrop" # Собираем .dmg пакет на macOS
+
+    runs-on: ${{ matrix.os }}
 
     steps:
-    # 2. Клонируем репозиторий на виртуальную машину GitHub
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # 3. Конфигурируем проект с помощью CMake и указываем генератор пакетов TGZ
-    - name: Configure CMake
-      run: cmake -H. -B_build -DCPACK_GENERATOR="TGZ"
+    # Для сборки RPM-пакетов на Ubuntu утилите CPack нужен инструмент rpm
+    - name: Install RPM tools (Linux only)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y rpm
 
-    # 4. Собираем (компилируем) проект и упаковываем его через CPack
+    - name: Configure CMake
+      run: cmake -H. -B_build -DCPACK_GENERATOR="${{ matrix.generator }}"
+
     - name: Build and Pack
       run: cmake --build _build --target package
 
-    # 5. Создаем локальную папку для артефактов и переносим туда готовый архив (как в вашей лабораторной)
     - name: Prepare Artifacts
       run: |
         mkdir artifacts
-        mv _build/*.tar.gz artifacts/
+        # Переносим все сгенерированные пакеты (.deb, .rpm, .dmg) в папку artifacts
+        mv _build/*.deb artifacts/ 2>/dev/null || true
+        mv _build/*.rpm artifacts/ 2>/dev/null || true
+        mv _build/*.dmg artifacts/ 2>/dev/null || true
+        mv _build/*.tar.gz artifacts/ 2>/dev/null || true
 
-    # 6. Автоматически публикуем архив в разделе "Releases" вашего репозитория GitHub
-    - name: Create GitHub Release
+    # Скрипт автоматически объединит файлы с обеих ОС и прикрепит их к одному релизу
+    - name: Upload Artifacts to GitHub Release
       uses: softprops/action-gh-release@v2
       with:
-        files: artifacts/*.tar.gz
+        files: artifacts/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
