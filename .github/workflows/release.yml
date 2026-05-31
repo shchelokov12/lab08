@@ -12,6 +12,7 @@ jobs:
   build-and-pack:
     # Использование матрицы для запуска сборки одновременно на Linux и macOS
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
