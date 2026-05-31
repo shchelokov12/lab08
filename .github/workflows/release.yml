@@ -1,0 +1,38 @@
+name: CMake Pack and Release
+
+# 1. Триггер: запускать сборку только тогда, когда в репозиторий пушится новый тег версии (например, v0.1.0.0)
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-pack:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 2. Клонируем репозиторий на виртуальную машину GitHub
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # 3. Конфигурируем проект с помощью CMake и указываем генератор пакетов TGZ
+    - name: Configure CMake
+      run: cmake -H. -B_build -DCPACK_GENERATOR="TGZ"
+
+    # 4. Собираем (компилируем) проект и упаковываем его через CPack
+    - name: Build and Pack
+      run: cmake --build _build --target package
+
+    # 5. Создаем локальную папку для артефактов и переносим туда готовый архив (как в вашей лабораторной)
+    - name: Prepare Artifacts
+      run: |
+        mkdir artifacts
+        mv _build/*.tar.gz artifacts/
+
+    # 6. Автоматически публикуем архив в разделе "Releases" вашего репозитория GitHub
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: artifacts/*.tar.gz
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
