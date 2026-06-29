@@ -2,11 +2,14 @@ FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Добавили libgtk-3-dev и pkg-config
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     cmake \
     libgtest-dev \
+    libgtk-3-dev \
+    pkg-config \
     git \
     && rm -rf /var/lib/apt/lists/*
 
