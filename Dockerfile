@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y \
     cmake \
     && rm -rf /var/lib/apt/lists/*
 
-COPY . print/
+RUN git clone https://github.com/tp-labs/lab07 print
 WORKDIR print
 
 RUN cmake -H. -B_build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=_install \
