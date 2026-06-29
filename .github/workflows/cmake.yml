@@ -11,10 +11,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    # Исправленный шаг клонирования с субмодулями
     - name: Checkout repository code
       uses: actions/checkout@v4
       with:
-        submodules: true
+        submodules: recursive
 
     - name: Build Docker Image
       run: |
